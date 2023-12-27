@@ -52,7 +52,7 @@ EQU_EXP     : EQU_EXP EXP {
     if(!$2->bval or $1->ival!=$2->ival)$$->bval = false;
     else $$->bval = 1;
 } 
-            | EXP{$$ = $1; $$->bval = 1; }
+            | EXP{$$ = $1; }
             ;
 Plus_EXP    : Plus_EXP EXP {$$ =new Var( $1->ival+$2->ival);} | EXP {$$ = $1;}
             ;

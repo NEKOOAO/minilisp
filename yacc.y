@@ -23,7 +23,9 @@ using namespace std;
         string type;
         Var var;
         Fun_oper(Var _var){var = _var;type = "var";}
-        Fun_oper(int x){type = "sub";}
+        Fun_oper(string s){
+            type = s;
+        }
     };
     struct Funtion{
         vector<Fun_oper> body;
@@ -57,10 +59,17 @@ using namespace std;
                         cout<<body[i].var.s<<" "<<sym[body[i].var.s].ival<<'\n';
                     }
                 }
-                else if(body[i].type == "sub"){
-                    cout<<"sub\n";
+                else if(body[i].type== "sub"){
+                    //cout<<"sub\n";
                     sub();
-
+                }
+                else if(body[i].type =="add"){
+                    //cout<<"add\n";
+                    add();
+                }
+                else if(body[i].type =="mul"){
+                    cout<<"mul\n";
+                    mul();
                 }
             }
             return &sys_stack.top();
@@ -79,16 +88,30 @@ using namespace std;
             a.ival -= b.ival;
             sys_stack.push(a); 
         }
+        private : void add(){
+            Var a,b;
+            a = top();b = top();
+            a.ival += b.ival;
+            sys_stack.push(a); 
+        }
+        private : void mul(){
+            Var a,b;
+            a = top();b = top();
+            a.ival *= b.ival;
+            sys_stack.push(a); 
+        }
 
     };
     Var* init (Var* x);Var* result(vector<Var> vec);
     Var* Sub(Var* l,Var* r);
+    Var* Add(Var* l,Var* r);
+    Var* Mul(Var*l, Var* r);
     void bind(int id,vector<string> vec);
   
 }
 %{
 void yyerror(const char *message);
-extern int yylex(); 
+extern int yylex();
 int infunc,func_id=0;
 
 %}
@@ -111,11 +134,11 @@ Print_stmt  : '(' Print_N EXP ')'{cout<<$3->ival<<'\n';}
 EXP         : num{$$ = init($1);} | '(' NUM_OP ')' {$$ = $2;} | '(' BOOL_OP ')'{$$ = $2;} | bool_val{$$ = init($1);} | ID {$$ = init($1);} | IF_EXP{$$ = $1;}
             | Fun_CALL 
             ;
-Fun_CALL    : '('FUN_EXP prams')'{cout<<"CALL"<<$3->Vvec[0].ival<<'\n';$$ = result($3->Vvec);}
+Fun_CALL    : '('FUN_EXP prams')'{$$ = result($3->Vvec);func_id++;}
             ;
-prams       : prams EXP{$$ = $1;$$->Vvec.emplace_back($2);} | EXP{$$ = new Vec();$$->Vvec.emplace_back(*$1);cout<<$1->ival<<' '<<$$->Vvec[0].ival<<'\n';} 
+prams       : prams EXP{$$ = $1;$$->Vvec.emplace_back(*$2);} | EXP{$$ = new Vec();$$->Vvec.emplace_back(*$1);} 
             ;
-FUN_EXP     :'(' FUN_token'(' prams_def ')' FUN_BODY')'{bind(0,$4->vec);infunc = 0;}
+FUN_EXP     :'(' FUN_token'(' prams_def ')' FUN_BODY')'{bind(func_id,$4->vec);infunc = 0;}
             ;
 prams_def   : prams_def ID{$1->vec.emplace_back($2->s);$$ = $1;} | ID{$$ = new Vec();$$->vec.emplace_back($1->s);}
             ;
@@ -123,9 +146,9 @@ FUN_token   : Fun{infunc = 1;}
             ;
 FUN_BODY    : FUN_BODY EXP | EXP
             ;
-NUM_OP      :  '+' EXP Plus_EXP  {$$ =new Var( $2->ival+$3->ival);} 
+NUM_OP      : '+' EXP Plus_EXP {$$ = Add($2,$3);} 
             | '-' EXP EXP {$$ =Sub($2,$3);} 
-            | '*' EXP Mul_EXP {$$ =new Var( $2->ival*$3->ival);} 
+            | '*' EXP Mul_EXP {$$ =Mul($2,$3);cout<<"m"<<'\n';} 
             | '/' EXP EXP {$$ =new Var( $2->ival/$3->ival);} 
             | MOD EXP EXP {$$ =new Var( $2->ival%$3->ival);}
             | '>' EXP EXP {$$ =new Var((bool) $2->ival>$3->ival);}
@@ -139,9 +162,9 @@ EQU_EXP     : EQU_EXP EXP {
 } 
             | EXP{$$ = $1; $$->bval = 1; }
             ;
-Plus_EXP    : Plus_EXP EXP {$$ =new Var( $1->ival+$2->ival);} | EXP {$$ = $1;}
+Plus_EXP    : Plus_EXP EXP {$$ = Add($1,$2);} | EXP {$$ = $1;}
             ;
-Mul_EXP     : Mul_EXP EXP {$$ =new Var( $1->ival*$2->ival);} | EXP {$$ = $1;}
+Mul_EXP     : Mul_EXP EXP {$$ =Mul($1,$2);} | EXP {$$ = $1;}
             ;    
 BOOL_OP     : And EXP AND_EXP {$$ =new Var( $2->bval and $3->bval);} | Or EXP OR_EXP {$$ =new Var( $2->bval or $3->bval);} | Not EXP {$$ =new Var( ! $2->bval);}
             ;
@@ -170,7 +193,9 @@ IF_EXP      : '(' If EXP EXP EXP ')'{
 }
             ;
 %%
-
+void xout(string s){
+    //cout<<s<<'\n';
+}
 Funtion fun_arr[100]; 
 map<string,int> id_table;
 Var val_table[100];
@@ -188,7 +213,27 @@ Var* Sub(Var* l,Var* r){
         return new Var(l->ival-r->ival);
     }
     else{
-        fun_arr[func_id].add(Fun_oper(0));
+        fun_arr[func_id].add(Fun_oper((string) "sub"));
+        return new Var();
+    }
+}
+Var* Add(Var*l, Var* r){
+    if(!infunc){
+        return new Var(l->ival+r->ival);
+    }
+    else{
+        xout("Add");
+        fun_arr[func_id].add(Fun_oper((string)"add"));
+        return new Var();
+    }
+}
+Var* Mul(Var*l, Var* r){
+    if(!infunc){
+        return new Var(l->ival*r->ival);
+    }
+    else{
+        xout("Mul");
+        fun_arr[func_id].add(Fun_oper((string)"mul"));
         return new Var();
     }
 }
