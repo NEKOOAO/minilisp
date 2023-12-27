@@ -44,11 +44,13 @@ using namespace std;
     Var* Equ(Var*l, Var* r);
     void add_func(string s , int val);
     void bind(int id,vector<string> vec);
-
+    Var* S_Equ(Var*l, Var* r);
+    void yyerror(const char *message);
     Var* result(int id, vector<Var> vec);
     Var* result(string s,vector<Var> vec);
     int t(int x);
     struct Funtion{
+        bool _re = 0;    
         vector<Fun_oper> body;
         vector<string> pram;
         map<string,Var> sym;
@@ -73,15 +75,15 @@ using namespace std;
         Var* cac_result(vector<Var>_pram ){
             init();
             pram_set(_pram);
-            cout<<body.size()<<'\n';
+            //cout<<body.size()<<'\n';
             for(int i = 0,len = body.size();i<len;i++){
                 if(body[i].type == "var"){
                     sys_stack.push(body[i].var);
                     if(body[i].var.type == 0){
-                        cout<<body[i].var.ival<<" var\n";
+                        //cout<<body[i].var.ival<<" var\n";
                     }
                     else{
-                        cout<<body[i].var.s<<" "<<sym[body[i].var.s].ival<<'\n';
+                        //cout<<body[i].var.s<<" "<<sym[body[i].var.s].ival<<'\n';
                     }
                 }
                 else if(body[i].type== "sub"){
@@ -97,45 +99,50 @@ using namespace std;
                     mul();
                 }
                 else if(body[i].type =="div"){
-                    cout<<"div\n";
+                    //cout<<"div\n";
                     div();
                 }
                 else if(body[i].type =="mod"){
-                    cout<<"mod\n";
+                    //cout<<"mod\n";
                     mod();
                 }
                 else if(body[i].type =="big"){
-                    cout<<"big\n";
+                    //cout<<"big\n";
                     big();
                 }
                 else if(body[i].type =="les"){
-                    cout<<"les\n";
+                    //cout<<"les\n";
                     les();
                 }
                 else if(body[i].type =="not"){
-                    cout<<"not\n";
+                    //cout<<"not\n";
                     Not();
                 }
                 else if(body[i].type =="and"){
-                    cout<<"big\n";
+                    //cout<<"big\n";
                     And();
                 }
                 else if(body[i].type =="or"){
-                    cout<<"big\n";
+                    //cout<<"big\n";
                     Or();
                 }
                 else if(body[i].type =="if"){
-                    cout<<"big\n";
+                    //cout<<"big\n";
                     If();
                 }
                 else if(body[i].type =="equ"){
-                    cout<<"big\n";
+                    //cout<<"big\n";
+                    equ();
+                }
+                else if(body[i].type =="sequ"){
+                    //cout<<"big\n";
                     equ();
                 }
                 else if(body[i].type == "fun"){
-                    cout<<"fun\n";
+                    //cout<<"fun\n";
                     fun(body[i].tmp,body[i].var.s);
                 }
+                if(_re)return new Var();
             }
             return &sys_stack.top();
         }
@@ -150,36 +157,76 @@ using namespace std;
         private : void sub(){
             Var a,b;
             a = top();b = top();
+            if(a.type!=0 or b.type!=0){
+                yyerror("type error");
+                _re = 1;
+                return;
+            }
             b.ival -= a.ival;
             sys_stack.push(b); 
         }
         private : void add(){
             Var a,b;
             a = top();b = top();
+            if(a.type!=0 or b.type!=0){
+                yyerror("type error");
+                _re = 1;
+                return;
+            }
             a.ival += b.ival;
             sys_stack.push(a); 
         }
         private : void mul(){
             Var a,b;
             a = top();b = top();
+            if(a.type!=0 or b.type!=0){
+                yyerror("type error");
+                _re = 1;
+                return;
+            }
             a.ival *= b.ival;
             sys_stack.push(a); 
         }
         private : void div(){
             Var a,b;
             a = top();b = top();
+            if(a.type!=0 or b.type!=0){
+                yyerror("type error");
+                _re = 1;
+                return;
+            }
+            if(a.ival==0){
+                yyerror("syntax error (/0)");
+                _re = 1;
+                return;
+            }
             b.ival /= a.ival;
             sys_stack.push(b); 
         }
         private : void mod(){
             Var a,b;
             a = top();b = top();
+            if(a.type!=0 or b.type!=0){
+                yyerror("type error");
+                _re = 1;
+                return;
+            }
+            if(a.ival==0){
+                yyerror("syntax error (/0)");
+                _re = 1;
+                return;
+            }
             b.ival %= a.ival;
             sys_stack.push(b); 
         }
         private : void big(){
             Var a,b;
             a = top();b = top();
+            if(a.type!=0 or b.type!=0){
+                yyerror("type error");
+                _re = 1;
+                return;
+            }
             a.bval = a.ival>b.ival;
             a.type = 1;
             sys_stack.push(a); 
@@ -187,6 +234,11 @@ using namespace std;
         private : void les(){
             Var a,b;
             a = top();b = top();
+            if(a.type!=0 or b.type!=0){
+                yyerror("type error");
+                _re = 1;
+                return;
+            }
             a.bval = a.ival<b.ival;
             a.type = 1;
             sys_stack.push(a); 
@@ -194,6 +246,11 @@ using namespace std;
         private : void And(){
             Var a,b;
             a = top();b = top();
+            if(a.type!=1 or b.type!=1){
+                yyerror("type error");
+                _re = 1;
+                return;
+            }
             a.bval = a.bval and b.bval;
             a.type = 1;
             sys_stack.push(a); 
@@ -201,6 +258,11 @@ using namespace std;
         private : void Or(){
             Var a,b;
             a = top();b = top();
+            if(a.type!=1 or b.type!=1){
+                yyerror("type error");
+                _re = 1;
+                return;
+            }
             a.bval = a.bval or b.bval;
             a.type = 1;
             sys_stack.push(a); 
@@ -208,6 +270,11 @@ using namespace std;
         private : void Not(){
             Var a;
             a = top();
+            if(a.type!=1){
+                yyerror("type error");
+                _re = 1;
+                return;
+            }
             a.bval = !a.bval;
             a.type = 1;
             sys_stack.push(a); 
@@ -215,25 +282,59 @@ using namespace std;
         private : void If(){
             Var a,b,c;
             a = top();b = top();c = top();
+            if(a.type!=1 ){
+                yyerror("type error");
+                _re = 1;
+                return;
+            }
             if(a.bval)sys_stack.push(b);
             else sys_stack.push(c);
         }
-        private : void equ(){
+         private : void sequ(){
             Var a,b;
             a = top();b = top();
+            if(a.type!=0 or b.type!=0){
+                yyerror("type error");
+                _re = 1;
+                return;
+            }
             if(b.bval){
                 if(a.ival!=b.ival){
                     a.bval = false;
-                    a.type = 1;    
+   
                 }
                 else{
                     a.bval = true;
-                    a.type = 1;    
                 }
             }
             else{
                 a.bval = false;
-                a.type = 1;
+                
+            }
+            a.type = 1;    
+            sys_stack.push(a); 
+        }
+        private : void equ(){
+            Var a,b;
+            a = top();b = top();
+            if(a.type!=0 or b.type!=0){
+                yyerror("type error");
+                _re = 1;
+                return;
+            }
+            if(b.bval){
+                if(a.ival!=b.ival){
+                    a.bval = false;
+                    a.type = 0;    
+                }
+                else{
+                    a.bval = true;
+                    a.type = 0;    
+                }
+            }
+            else{
+                a.bval = false;
+                a.type = 0;
             }
             sys_stack.push(a); 
         }
@@ -248,11 +349,9 @@ using namespace std;
     };
 }
 %{
-void yyerror(const char *message);
 extern int yylex();
 int infunc,func_id=1;
 bool re = 0;
-
 %}
 %union{
     Var* var;
@@ -273,7 +372,7 @@ Print_stmt  : '(' Print_N EXP ')'{cout<<$3->ival<<'\n';}
 EXP         : num{$$ = init($1);} | '(' NUM_OP ')' {$$ = $2;} | '(' BOOL_OP ')'{$$ = $2;} | bool_val{$$ = init($1);} | ID {$$ = init($1);} | IF_EXP{$$ = $1;}
             | Fun_CALL {$$ = $1;} | FUN_EXP{$$ = $1;}
             ;
-Fun_CALL    : '('FUN_EXP prams')'{$$ = result($2->ival,$3->Vvec);} | '(' ID prams ')'{$$ = fun_f($2,$3);}| '(' ID ')'{$$ = fun_f($2);}
+Fun_CALL    : '('FUN_EXP prams')'{$$ = result($2->ival,$3->Vvec);if(re)YYABORT;} | '(' ID prams ')'{$$ = fun_f($2,$3);if(re)YYABORT;}| '(' ID ')'{$$ = fun_f($2);if(re)YYABORT;}
             ;
 prams       : prams EXP{$$ = $1;$$->Vvec.emplace_back(*$2);} | EXP{$$ = new Vec();$$->Vvec.emplace_back(*$1);} 
             ;
@@ -286,30 +385,31 @@ FUN_token   : Fun{infunc = 1;}
             ;
 FUN_BODY    : FUN_BODY EXP | EXP
             ;
-NUM_OP      : '+' EXP Plus_EXP {$$ = Add($2,$3);} 
-            | '-' EXP EXP {$$ =Sub($2,$3);} 
-            | '*' EXP Mul_EXP {$$ =Mul($2,$3);} 
+NUM_OP      : '+' EXP Plus_EXP {$$ = Add($2,$3);if(re)YYABORT;} 
+            | '-' EXP EXP {$$ =Sub($2,$3);if(re)YYABORT;} 
+            | '*' EXP Mul_EXP {$$ =Mul($2,$3);if(re)YYABORT;} 
             | '/' EXP EXP {$$ =Div($2,$3);if(re)YYABORT;} 
-            | MOD EXP EXP {$$ =Mod($2,$3);}
-            | '>' EXP EXP {$$ =Big($2,$3);}
-            | '<' EXP EXP {$$ =les($2,$3);}
-            | '=' EXP EQU_EXP {$$ = Equ($2,$3);}
+            | MOD EXP EXP {$$ =Mod($2,$3);if(re)YYABORT;}
+            | '>' EXP EXP {$$ =Big($2,$3);if(re)YYABORT;}
+            | '<' EXP EXP {$$ =les($2,$3);if(re)YYABORT;}
+            | '=' EXP EQU_EXP {$$ = Equ($2,$3);$$->type = 1;if(re)YYABORT;}
             ;
 EQU_EXP     : EQU_EXP EXP {
     $$ = Equ($1,$2);
+    if(re)YYABORT;
 } 
             | EXP{$$ = $1; $$->bval = 1; }
             ;
-Plus_EXP    : Plus_EXP EXP {$$ = Add($1,$2);} | EXP {$$ = $1;}
+Plus_EXP    : Plus_EXP EXP {$$ = Add($1,$2);if(re)YYABORT;} | EXP {$$ = $1;}
             ;
-Mul_EXP     : Mul_EXP EXP {$$ =Mul($1,$2);} | EXP {$$ = $1;}
+Mul_EXP     : Mul_EXP EXP {$$ =Mul($1,$2);if(re)YYABORT;} | EXP {$$ = $1;}
             ;    
-BOOL_OP     : And EXP AND_EXP {$$ = And_f($2,$3);} | Or EXP OR_EXP {$$ = Or_f($2,$3);} | Not EXP {$$ = Not_f($2);}
+BOOL_OP     : And EXP AND_EXP {$$ = And_f($2,$3);if(re)YYABORT;} | Or EXP OR_EXP {$$ = Or_f($2,$3);if(re)YYABORT;} | Not EXP {$$ = Not_f($2);if(re)YYABORT;}
             ;
-AND_EXP     : AND_EXP EXP {$$ = And_f($1,$2);}
+AND_EXP     : AND_EXP EXP {$$ = And_f($1,$2);if(re)YYABORT;}
             | EXP {$$ = $1;}
             ;
-OR_EXP      : OR_EXP EXP {$$ = Or_f($1,$2);}
+OR_EXP      : OR_EXP EXP {$$ = Or_f($1,$2);if(re)YYABORT;}
             | EXP {$$ = $1;}
             ;
 Def_stmt    : '(' Def ID EXP ')'{
@@ -327,6 +427,7 @@ Def_stmt    : '(' Def ID EXP ')'{
             ;
 IF_EXP      : '(' If EXP EXP EXP ')'{
             $$ = If_f($3,$4,$5);
+            if(re)YYABORT;
 }
             ;
 %%
@@ -353,6 +454,10 @@ Var* result(string s,vector<Var> vec){
 }
 Var* If_f(Var* p,Var* l,Var* r){
     if(!infunc){
+        if(p->type != 1){
+            yyerror("type error");
+            return l;
+        }
         if(p->bval){
             return l;
         }
@@ -367,6 +472,10 @@ Var* If_f(Var* p,Var* l,Var* r){
 }
 Var* Sub(Var* l,Var* r){
     if(!infunc){
+        if(l->type != 0 or r->type !=0){
+            yyerror("type error");
+            return l;
+        }
         return new Var(l->ival-r->ival);
     }
     else{
@@ -376,6 +485,10 @@ Var* Sub(Var* l,Var* r){
 }
 Var* Add(Var*l, Var* r){
     if(!infunc){
+        if(l->type != 0 or r->type !=0){
+            yyerror("type error");
+            return l;
+        }
         return new Var(l->ival+r->ival);
     }
     else{
@@ -386,6 +499,10 @@ Var* Add(Var*l, Var* r){
 }
 Var* Mul(Var*l, Var* r){
     if(!infunc){
+        if(l->type != 0 or r->type !=0){
+            yyerror("type error");
+            return l;
+        }
         return new Var(l->ival*r->ival);
     }
     else{
@@ -396,8 +513,12 @@ Var* Mul(Var*l, Var* r){
 }
 Var* Div(Var*l, Var* r){
     if(!infunc){
+        if(l->type != 0 or r->type !=0){
+            yyerror("type error");
+            return l;
+        }
         if(r->ival == 0){
-            yyerror("syntax error (/0)\n");
+            yyerror("syntax error (/0)");
             return new Var();
         }
         return new Var(l->ival/r->ival);
@@ -410,6 +531,14 @@ Var* Div(Var*l, Var* r){
 }
 Var* Mod(Var*l, Var* r){
     if(!infunc){
+        if(l->type != 0 or r->type !=0){
+            yyerror("type error");
+            return l;
+        }
+        if(r->ival == 0){
+            yyerror("syntax error (/0)");
+            return new Var();
+        }
         return new Var(l->ival%r->ival);
     }
     else{
@@ -420,6 +549,10 @@ Var* Mod(Var*l, Var* r){
 }
 Var* Big(Var*l, Var* r){
     if(!infunc){
+        if(l->type != 0 or r->type !=0){
+            yyerror("type error");
+            return l;
+        }
         return new Var(l->ival>r->ival);
     }
     else{
@@ -430,6 +563,10 @@ Var* Big(Var*l, Var* r){
 }
 Var* les(Var*l, Var* r){
     if(!infunc){
+        if(l->type != 0 or r->type !=0){
+            yyerror("type error");
+            return l;
+        }
         return new Var(l->ival<r->ival);
     }
     else{
@@ -440,10 +577,14 @@ Var* les(Var*l, Var* r){
 }
 Var* Equ(Var*l, Var* r){
     if(!infunc){
+        if(l->type != 0 or r->type !=0){
+            yyerror("type error");
+            return l;
+        }
         Var *ret  =new Var( l->ival);
         if(!r->bval or l->ival!=r->ival)ret->bval = false;
         else ret->bval = 1;
-        ret->type = 1;
+        ret->type = 0;
         return ret;
     }
     else{
@@ -452,8 +593,30 @@ Var* Equ(Var*l, Var* r){
         return new Var();
     }
 }
+Var* S_Equ(Var*l, Var* r){
+    if(!infunc){
+        if(l->type != 0 or r->type !=0){
+            yyerror("type error");
+            return l;
+        }
+        Var *ret  =new Var( l->ival);
+        if(!r->bval or l->ival!=r->ival)ret->bval = false;
+        else ret->bval = 1;
+        ret->type = 0;
+        return ret;
+    }
+    else{
+        xout("Equ");
+        fun_arr[func_id].add(Fun_oper((string)"sequ"));
+        return new Var();
+    }
+}
 Var* And_f(Var*l, Var* r){
     if(!infunc){
+        if(l->type != 1 or r->type !=1){
+            yyerror("type error");
+            return l;
+        }
         return new Var(l->bval and r->bval);
     }
     else{
@@ -464,6 +627,10 @@ Var* And_f(Var*l, Var* r){
 }
 Var* Or_f(Var*l, Var* r){
     if(!infunc){
+        if(l->type != 1 or r->type !=1){
+            yyerror("type error");
+            return l;
+        }
         return new Var(l->bval or r->bval);
     }
     else{
@@ -474,6 +641,10 @@ Var* Or_f(Var*l, Var* r){
 }
 Var* Not_f(Var*l){
     if(!infunc){
+        if(l->type != 1){
+            yyerror("type error");
+            return l;
+        }
         return new Var(!l->bval);
     }
     else{
