@@ -68,8 +68,44 @@ using namespace std;
                     add();
                 }
                 else if(body[i].type =="mul"){
-                    cout<<"mul\n";
+                    //cout<<"mul\n";
                     mul();
+                }
+                else if(body[i].type =="div"){
+                    cout<<"div\n";
+                    div();
+                }
+                else if(body[i].type =="mod"){
+                    cout<<"mod\n";
+                    mod();
+                }
+                else if(body[i].type =="big"){
+                    cout<<"big\n";
+                    big();
+                }
+                else if(body[i].type =="les"){
+                    cout<<"les\n";
+                    les();
+                }
+                else if(body[i].type =="not"){
+                    cout<<"not\n";
+                    Not();
+                }
+                else if(body[i].type =="and"){
+                    cout<<"big\n";
+                    And();
+                }
+                else if(body[i].type =="or"){
+                    cout<<"big\n";
+                    Or();
+                }
+                else if(body[i].type =="if"){
+                    cout<<"big\n";
+                    If();
+                }
+                else if(body[i].type =="equ"){
+                    cout<<"big\n";
+                    equ();
                 }
             }
             return &sys_stack.top();
@@ -85,8 +121,8 @@ using namespace std;
         private : void sub(){
             Var a,b;
             a = top();b = top();
-            a.ival -= b.ival;
-            sys_stack.push(a); 
+            b.ival -= a.ival;
+            sys_stack.push(b); 
         }
         private : void add(){
             Var a,b;
@@ -100,12 +136,92 @@ using namespace std;
             a.ival *= b.ival;
             sys_stack.push(a); 
         }
-
+        private : void div(){
+            Var a,b;
+            a = top();b = top();
+            b.ival /= a.ival;
+            sys_stack.push(b); 
+        }
+        private : void mod(){
+            Var a,b;
+            a = top();b = top();
+            b.ival %= a.ival;
+            sys_stack.push(b); 
+        }
+        private : void big(){
+            Var a,b;
+            a = top();b = top();
+            a.bval = a.ival>b.ival;
+            a.type = 1;
+            sys_stack.push(a); 
+        }
+        private : void les(){
+            Var a,b;
+            a = top();b = top();
+            a.bval = a.ival<b.ival;
+            a.type = 1;
+            sys_stack.push(a); 
+        }
+        private : void And(){
+            Var a,b;
+            a = top();b = top();
+            a.bval = a.bval and b.bval;
+            a.type = 1;
+            sys_stack.push(a); 
+        }
+        private : void Or(){
+            Var a,b;
+            a = top();b = top();
+            a.bval = a.bval or b.bval;
+            a.type = 1;
+            sys_stack.push(a); 
+        }
+        private : void Not(){
+            Var a;
+            a = top();
+            a.bval = !a.bval;
+            a.type = 1;
+            sys_stack.push(a); 
+        }
+        private : void If(){
+            Var a,b,c;
+            a = top();b = top();c = top();
+            if(a.bval)sys_stack.push(b);
+            else sys_stack.push(c);
+        }
+        private : void equ(){
+            Var a,b;
+            a = top();b = top();
+            if(b.bval){
+                if(a.ival!=b.ival){
+                    a.bval = false;
+                    a.type = 1;    
+                }
+                else{
+                    a.bval = true;
+                    a.type = 1;    
+                }
+            }
+            else{
+                a.bval = false;
+                a.type = 1;
+            }
+            sys_stack.push(a); 
+        }
     };
     Var* init (Var* x);Var* result(vector<Var> vec);
     Var* Sub(Var* l,Var* r);
     Var* Add(Var* l,Var* r);
     Var* Mul(Var*l, Var* r);
+    Var* Div(Var*l, Var* r);
+    Var* Mod(Var*l, Var* r);
+    Var* Big(Var*l, Var* r);
+    Var* les(Var*l, Var* r);
+    Var* And_f(Var*l, Var* r);
+    Var* Or_f(Var*l, Var* r);    
+    Var* Not_f(Var*l);
+    Var* If_f(Var* p,Var* l,Var* r);
+    Var* Equ(Var*l, Var* r);
     void bind(int id,vector<string> vec);
   
 }
@@ -148,17 +264,15 @@ FUN_BODY    : FUN_BODY EXP | EXP
             ;
 NUM_OP      : '+' EXP Plus_EXP {$$ = Add($2,$3);} 
             | '-' EXP EXP {$$ =Sub($2,$3);} 
-            | '*' EXP Mul_EXP {$$ =Mul($2,$3);cout<<"m"<<'\n';} 
-            | '/' EXP EXP {$$ =new Var( $2->ival/$3->ival);} 
-            | MOD EXP EXP {$$ =new Var( $2->ival%$3->ival);}
-            | '>' EXP EXP {$$ =new Var((bool) $2->ival>$3->ival);}
-            | '<' EXP EXP {$$ =new Var((bool) $2->ival<$3->ival);}
-            | '=' EXP EQU_EXP {$$ = new Var((bool)$2->ival==$3->ival);if(!$3->bval){$$->bval = false;}}
+            | '*' EXP Mul_EXP {$$ =Mul($2,$3);} 
+            | '/' EXP EXP {$$ =Div($2,$3);} 
+            | MOD EXP EXP {$$ =Mod($2,$3);}
+            | '>' EXP EXP {$$ =Big($2,$3);}
+            | '<' EXP EXP {$$ =les($2,$3);}
+            | '=' EXP EQU_EXP {$$ = Equ($2,$3);}
             ;
 EQU_EXP     : EQU_EXP EXP {
-    $$ =new Var( $1->ival);
-    if(!$2->bval or $1->ival!=$2->ival)$$->bval = false;
-    else $$->bval = 1;
+    $$ = Equ($1,$2);
 } 
             | EXP{$$ = $1; $$->bval = 1; }
             ;
@@ -166,12 +280,12 @@ Plus_EXP    : Plus_EXP EXP {$$ = Add($1,$2);} | EXP {$$ = $1;}
             ;
 Mul_EXP     : Mul_EXP EXP {$$ =Mul($1,$2);} | EXP {$$ = $1;}
             ;    
-BOOL_OP     : And EXP AND_EXP {$$ =new Var( $2->bval and $3->bval);} | Or EXP OR_EXP {$$ =new Var( $2->bval or $3->bval);} | Not EXP {$$ =new Var( ! $2->bval);}
+BOOL_OP     : And EXP AND_EXP {$$ = And_f($2,$3);} | Or EXP OR_EXP {$$ = Or_f($2,$3);} | Not EXP {$$ = Not_f($2);}
             ;
-AND_EXP     : AND_EXP EXP {$$ =new Var( $1->bval and $2->bval);}
+AND_EXP     : AND_EXP EXP {$$ = And_f($1,$2);}
             | EXP {$$ = $1;}
             ;
-OR_EXP      : OR_EXP EXP {$$ =new Var( $1->bval or $2->bval);}
+OR_EXP      : OR_EXP EXP {$$ = Or_f($1,$2);}
             | EXP {$$ = $1;}
             ;
 Def_stmt    : '(' Def ID EXP ')'{
@@ -184,12 +298,7 @@ Def_stmt    : '(' Def ID EXP ')'{
 }
             ;
 IF_EXP      : '(' If EXP EXP EXP ')'{
-            if($3->bval){
-                $$ = $4;
-            }
-            else{
-                $$ = $5;
-            }
+            $$ = If_f($3,$4,$5);
 }
             ;
 %%
@@ -207,6 +316,20 @@ void bind(int id,vector<string> vec){
 }
 Var* result(vector<Var> vec){
     return fun_arr[func_id].result(vec);
+}
+Var* If_f(Var* p,Var* l,Var* r){
+    if(!infunc){
+        if(p->bval){
+            return l;
+        }
+        else{
+            return r;
+        }
+    }
+    else{
+        fun_arr[func_id].add(Fun_oper((string) "if"));
+        return new Var();
+    }
 }
 Var* Sub(Var* l,Var* r){
     if(!infunc){
@@ -237,6 +360,91 @@ Var* Mul(Var*l, Var* r){
         return new Var();
     }
 }
+Var* Div(Var*l, Var* r){
+    if(!infunc){
+        return new Var(l->ival/r->ival);
+    }
+    else{
+        xout("div");
+        fun_arr[func_id].add(Fun_oper((string)"div"));
+        return new Var();
+    }
+}
+Var* Mod(Var*l, Var* r){
+    if(!infunc){
+        return new Var(l->ival%r->ival);
+    }
+    else{
+        xout("mod");
+        fun_arr[func_id].add(Fun_oper((string)"mod"));
+        return new Var();
+    }
+}
+Var* Big(Var*l, Var* r){
+    if(!infunc){
+        return new Var(l->ival>r->ival);
+    }
+    else{
+        xout("big");
+        fun_arr[func_id].add(Fun_oper((string)"big"));
+        return new Var();
+    }
+}
+Var* les(Var*l, Var* r){
+    if(!infunc){
+        return new Var(l->ival<r->ival);
+    }
+    else{
+        xout("les");
+        fun_arr[func_id].add(Fun_oper((string)"les"));
+        return new Var();
+    }
+}
+Var* Equ(Var*l, Var* r){
+    if(!infunc){
+        Var *ret  =new Var( l->ival);
+        if(!r->bval or l->ival!=r->ival)ret->bval = false;
+        else ret->bval = 1;
+        ret->type = 1;
+        return ret;
+    }
+    else{
+        xout("Equ");
+        fun_arr[func_id].add(Fun_oper((string)"equ"));
+        return new Var();
+    }
+}
+Var* And_f(Var*l, Var* r){
+    if(!infunc){
+        return new Var(l->bval and r->bval);
+    }
+    else{
+        xout("and");
+        fun_arr[func_id].add(Fun_oper((string)"and"));
+        return new Var();
+    }
+}
+Var* Or_f(Var*l, Var* r){
+    if(!infunc){
+        return new Var(l->bval or r->bval);
+    }
+    else{
+        xout("or");
+        fun_arr[func_id].add(Fun_oper((string)"or"));
+        return new Var();
+    }
+}
+Var* Not_f(Var*l){
+    if(!infunc){
+        return new Var(!l->bval);
+    }
+    else{
+        xout("not");
+        fun_arr[func_id].add(Fun_oper((string)"not"));
+        return new Var();
+    }
+}
+
 Var* init(Var* x){
     if(!infunc){
         if(x->type == 2){
