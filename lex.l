@@ -3,7 +3,7 @@
      #include "main.tab.h"
      using namespace std;
      void out(string s){
-          cout<<s;
+         // cout<<s;
      }
 %}
 %option noyywrap

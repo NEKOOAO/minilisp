@@ -27,6 +27,27 @@ using namespace std;
             type = s;
         }
     };
+    Var* fun_f(Var*l);
+    Var* fun_f(Var*l, Vec* r);
+    Var* init (Var* x);
+    Var* Sub(Var* l,Var* r);
+    Var* Add(Var* l,Var* r);
+    Var* Mul(Var*l, Var* r);
+    Var* Div(Var*l, Var* r);
+    Var* Mod(Var*l, Var* r);
+    Var* Big(Var*l, Var* r);
+    Var* les(Var*l, Var* r);
+    Var* And_f(Var*l, Var* r);
+    Var* Or_f(Var*l, Var* r);    
+    Var* Not_f(Var*l);
+    Var* If_f(Var* p,Var* l,Var* r);
+    Var* Equ(Var*l, Var* r);
+    void add_func(string s , int val);
+    void bind(int id,vector<string> vec);
+
+    Var* result(int id, vector<Var> vec);
+    Var* result(string s,vector<Var> vec);
+    int t(int x);
     struct Funtion{
         vector<Fun_oper> body;
         vector<string> pram;
@@ -46,8 +67,11 @@ using namespace std;
                 sym[pram[i]] = s[i];
             }
         }
-        
-        Var* result(vector<Var>_pram ){
+        void init(){
+            while(sys_stack.size())sys_stack.pop();
+        }
+        Var* cac_result(vector<Var>_pram ){
+            init();
             pram_set(_pram);
             cout<<body.size()<<'\n';
             for(int i = 0,len = body.size();i<len;i++){
@@ -107,6 +131,10 @@ using namespace std;
                 else if(body[i].type =="equ"){
                     cout<<"big\n";
                     equ();
+                }
+                else if(body[i].type == "fun"){
+                    cout<<"fun\n";
+                    fun(body[i].tmp,body[i].var.s);
                 }
             }
             return &sys_stack.top();
@@ -209,24 +237,15 @@ using namespace std;
             }
             sys_stack.push(a); 
         }
+        void fun(int x,string s){
+            vector<Var> tmp;
+            for(int i = 0 ;i<x;i++){
+                tmp.emplace_back(top());
+            }
+            Var* ret = result(s,tmp);
+            sys_stack.push(*ret);
+        }
     };
-    Var* init (Var* x);
-    Var* Sub(Var* l,Var* r);
-    Var* Add(Var* l,Var* r);
-    Var* Mul(Var*l, Var* r);
-    Var* Div(Var*l, Var* r);
-    Var* Mod(Var*l, Var* r);
-    Var* Big(Var*l, Var* r);
-    Var* les(Var*l, Var* r);
-    Var* And_f(Var*l, Var* r);
-    Var* Or_f(Var*l, Var* r);    
-    Var* Not_f(Var*l);
-    Var* If_f(Var* p,Var* l,Var* r);
-    Var* Equ(Var*l, Var* r);
-    void add_func(string s , int val);
-    void bind(int id,vector<string> vec);
-    Var* result(int id, vector<Var> vec);
-    Var* result(string s,vector<Var> vec);
 }
 %{
 void yyerror(const char *message);
@@ -253,7 +272,7 @@ Print_stmt  : '(' Print_N EXP ')'{cout<<$3->ival<<'\n';}
 EXP         : num{$$ = init($1);} | '(' NUM_OP ')' {$$ = $2;} | '(' BOOL_OP ')'{$$ = $2;} | bool_val{$$ = init($1);} | ID {$$ = init($1);} | IF_EXP{$$ = $1;}
             | Fun_CALL {$$ = $1;} | FUN_EXP{$$ = $1;}
             ;
-Fun_CALL    : '('FUN_EXP prams')'{$$ = result($2->ival,$3->Vvec);} | '(' ID prams ')'{$$ = result($2->s,$3->Vvec);}| '(' ID ')'{$$ = result($2->s,vector<Var>());}
+Fun_CALL    : '('FUN_EXP prams')'{$$ = result($2->ival,$3->Vvec);} | '(' ID prams ')'{$$ = fun_f($2,$3);}| '(' ID ')'{$$ = fun_f($2);}
             ;
 prams       : prams EXP{$$ = $1;$$->Vvec.emplace_back(*$2);} | EXP{$$ = new Vec();$$->Vvec.emplace_back(*$1);} 
             ;
@@ -322,14 +341,14 @@ void bind(int id,vector<string> vec){
     fun_arr[id].pram_init(vec);
 }
 Var* result(int id,vector<Var> vec){
-    return fun_arr[id].result(vec);
+    return fun_arr[id].cac_result(vec);
 }
 Var* result(string s,vector<Var> vec){
     if(fun_table[s]==0){
         re = 1;
         return new Var();
     }
-    return fun_arr[fun_table[s]].result(vec);
+    return fun_arr[fun_table[s]].cac_result(vec);
 }
 Var* If_f(Var* p,Var* l,Var* r){
     if(!infunc){
@@ -458,7 +477,31 @@ Var* Not_f(Var*l){
         return new Var();
     }
 }
-
+Var* fun_f(Var*l, Vec* r){
+    if(!infunc){
+        return result(l->s,r->Vvec);
+    }
+    else{
+        xout("or");
+        Fun_oper tmp = Fun_oper((string)"fun");
+        tmp.var.s = l->s;
+        tmp.tmp = r->Vvec.size();
+        fun_arr[func_id].add(tmp);
+        return new Var();
+    }
+}
+Var* fun_f(Var*l){
+    if(!infunc){
+        return result(l->s,vector<Var>());
+    }
+    else{
+        Fun_oper tmp = Fun_oper((string)"fun");
+        tmp.var.s = l->s;
+        tmp.tmp = 0;
+        fun_arr[func_id].add(tmp);
+        return new Var();
+    }
+}
 Var* init(Var* x){
     if(!infunc){
         if(x->type == 2){
@@ -471,7 +514,6 @@ Var* init(Var* x){
         return new Var();
     }
 }
-
 void add_func(string s , int val){
     if(fun_table[s]){
         re =true;
@@ -497,6 +539,7 @@ void add_sym(string s , int type , int val){
         val_table[id] = Var((bool)val);
     }
 }
+int t (int x){return 0;}
 Var* get_sym(string s){
     if(id_table[s]==0){
         re = true;
