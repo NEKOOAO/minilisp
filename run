@@ -1,0 +1,4 @@
+bison -d -o main.tab.c yacc.y
+flex -o main.yy.c lex.l
+g++ -o final.out main.tab.c main.yy.c
+rm main.tab.c main.tab.h main.yy.c
