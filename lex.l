@@ -2,6 +2,9 @@
      #include <bits/stdc++.h>
      #include "main.tab.h"
      using namespace std;
+     void out(string s){
+          //cout<<s;
+     }
 %}
 %option noyywrap
 
@@ -25,7 +28,7 @@ bool_val #t|#f
 {Or} {return Or;}
 {Not}  {return Not;}
 {Def} {return Def;}
-{Fun}  {}
+{Fun}  {out("F"); return Fun;}
 {If} {return If;}
 {MOD} {return MOD;}
 {num} {Var x = new Var(1);yylval.var = new Var(1);yylval.var->ival = atoi(yytext);return num;}
@@ -36,6 +39,6 @@ bool_val #t|#f
      return bool_val;
 }
 [\t\r\n ] {}
-.			{ return yytext[0];}
+.			{ out(yytext);return yytext[0];}
 %%
 

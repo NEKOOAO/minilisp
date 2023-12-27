@@ -1,1 +1,1 @@
-(print-bool (= 1 1 1))
+(print-num( ( fun (x) ( - x (- 1 1)) )1))
