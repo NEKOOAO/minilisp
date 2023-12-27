@@ -1,5 +1,1 @@
-(define bar (fun (x) (+ x 1)))
-(define bar-z (fun () (bar 2)))
-
-(print-num (bar (bar-z)))
-
+(/ 1 0)

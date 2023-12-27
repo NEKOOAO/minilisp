@@ -251,6 +251,7 @@ using namespace std;
 void yyerror(const char *message);
 extern int yylex();
 int infunc,func_id=1;
+bool re = 0;
 
 %}
 %union{
@@ -288,7 +289,7 @@ FUN_BODY    : FUN_BODY EXP | EXP
 NUM_OP      : '+' EXP Plus_EXP {$$ = Add($2,$3);} 
             | '-' EXP EXP {$$ =Sub($2,$3);} 
             | '*' EXP Mul_EXP {$$ =Mul($2,$3);} 
-            | '/' EXP EXP {$$ =Div($2,$3);} 
+            | '/' EXP EXP {$$ =Div($2,$3);if(re)YYABORT;} 
             | MOD EXP EXP {$$ =Mod($2,$3);}
             | '>' EXP EXP {$$ =Big($2,$3);}
             | '<' EXP EXP {$$ =les($2,$3);}
@@ -321,6 +322,7 @@ Def_stmt    : '(' Def ID EXP ')'{
     else{
         add_sym($3->s,$4->type,$4->bval);    
     }
+    if(re)YYABORT;
 }
             ;
 IF_EXP      : '(' If EXP EXP EXP ')'{
@@ -336,7 +338,6 @@ map<string,int> id_table,fun_table;
 Var val_table[100];
 priority_queue<int> can_use_seq;
 int max_symbol = 100;
-bool re = 0;
 void bind(int id,vector<string> vec){
     fun_arr[id].pram_init(vec);
 }
@@ -395,6 +396,10 @@ Var* Mul(Var*l, Var* r){
 }
 Var* Div(Var*l, Var* r){
     if(!infunc){
+        if(r->ival == 0){
+            yyerror("syntax error (/0)\n");
+            return new Var();
+        }
         return new Var(l->ival/r->ival);
     }
     else{
@@ -517,6 +522,7 @@ Var* init(Var* x){
 void add_func(string s , int val){
     if(fun_table[s]){
         re =true;
+        yyerror("syntax error (redefine)");
         return;
     }
     fun_table[s] = val;
@@ -527,6 +533,7 @@ void add_sym(string s , int type , int val){
     }
     if(id_table[s]){
         re =true;
+        yyerror("syntax error (redefine)");
         return;
     }
     int id = can_use_seq.top();
@@ -542,13 +549,15 @@ void add_sym(string s , int type , int val){
 int t (int x){return 0;}
 Var* get_sym(string s){
     if(id_table[s]==0){
-        re = true;
+        re =true;
+        yyerror("syntax error (undefine)");
         return new Var();
     }
     return &val_table[id_table[s]];
 }
 void yyerror (const char *message)
 {
+    re = true;
 	cout<<message<<'\n';
 }
 int main()
