@@ -6,7 +6,7 @@ using namespace std;
         int type;
         string s;
         int ival;
-        bool bval;
+        bool bval=1;
         Var(int _ival){type = 0; ival = _ival;}
         Var(bool _bval){type = 1; bval = _bval;}
         Var(string _s){type = 2; s = _s;}
@@ -25,7 +25,7 @@ extern int yylex();
 }
 %token Print_N Print_B And Or Not Def Fun If MOD 
 %token<var> num bool_val ID
-%type<var> EXP Plus_EXP Mul_EXP NUM_OP BOOL_OP AND_EXP OR_EXP IF_EXP
+%type<var> EXP Plus_EXP Mul_EXP NUM_OP BOOL_OP AND_EXP OR_EXP IF_EXP EQU_EXP
 
 
 %%
@@ -45,7 +45,14 @@ NUM_OP      :  '+' EXP Plus_EXP  {$$ =new Var( $2->ival+$3->ival);}
             | MOD EXP EXP {$$ =new Var( $2->ival%$3->ival);}
             | '>' EXP EXP {$$ =new Var((bool) $2->ival>$3->ival);}
             | '<' EXP EXP {$$ =new Var((bool) $2->ival<$3->ival);}
-            | '=' EXP EXP {$$ = new Var((bool)$2->ival==$3->ival);}
+            | '=' EXP EQU_EXP {$$ = new Var((bool)$2->ival==$3->ival);if(!$3->bval){$$->bval = false;}}
+            ;
+EQU_EXP     : EQU_EXP EXP {
+    $$ =new Var( $1->ival);
+    if(!$2->bval or $1->ival!=$2->ival)$$->bval = false;
+    else $$->bval = 1;
+} 
+            | EXP{$$ = $1; $$->bval = 1; }
             ;
 Plus_EXP    : Plus_EXP EXP {$$ =new Var( $1->ival+$2->ival);} | EXP {$$ = $1;}
             ;
