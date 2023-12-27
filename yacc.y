@@ -46,7 +46,8 @@ using namespace std;
                 sym[pram[i]] = s[i];
             }
         }
-        Var* result(vector<Var>_pram){
+        
+        Var* result(vector<Var>_pram ){
             pram_set(_pram);
             cout<<body.size()<<'\n';
             for(int i = 0,len = body.size();i<len;i++){
@@ -209,7 +210,7 @@ using namespace std;
             sys_stack.push(a); 
         }
     };
-    Var* init (Var* x);Var* result(vector<Var> vec);
+    Var* init (Var* x);
     Var* Sub(Var* l,Var* r);
     Var* Add(Var* l,Var* r);
     Var* Mul(Var*l, Var* r);
@@ -222,13 +223,15 @@ using namespace std;
     Var* Not_f(Var*l);
     Var* If_f(Var* p,Var* l,Var* r);
     Var* Equ(Var*l, Var* r);
+    void add_func(string s , int val);
     void bind(int id,vector<string> vec);
-  
+    Var* result(int id, vector<Var> vec);
+    Var* result(string s,vector<Var> vec);
 }
 %{
 void yyerror(const char *message);
 extern int yylex();
-int infunc,func_id=0;
+int infunc,func_id=1;
 
 %}
 %union{
@@ -237,7 +240,7 @@ int infunc,func_id=0;
 }
 %token Print_N Print_B And Or Not Def Fun If MOD 
 %token<var> num bool_val ID
-%type<var> EXP Plus_EXP Mul_EXP NUM_OP BOOL_OP AND_EXP OR_EXP IF_EXP EQU_EXP Fun_CALL
+%type<var> EXP Plus_EXP Mul_EXP NUM_OP BOOL_OP AND_EXP OR_EXP IF_EXP EQU_EXP Fun_CALL FUN_EXP
 %type<vec> prams_def prams
 %%
 program     : program stmt | stmt
@@ -248,13 +251,14 @@ Print_stmt  : '(' Print_N EXP ')'{cout<<$3->ival<<'\n';}
             | '(' Print_B EXP ')'{cout<<($3->bval?"#t":"#f")<<'\n';}
             ;
 EXP         : num{$$ = init($1);} | '(' NUM_OP ')' {$$ = $2;} | '(' BOOL_OP ')'{$$ = $2;} | bool_val{$$ = init($1);} | ID {$$ = init($1);} | IF_EXP{$$ = $1;}
-            | Fun_CALL 
+            | Fun_CALL {$$ = $1;} | FUN_EXP{$$ = $1;}
             ;
-Fun_CALL    : '('FUN_EXP prams')'{$$ = result($3->Vvec);func_id++;}
+Fun_CALL    : '('FUN_EXP prams')'{$$ = result($2->ival,$3->Vvec);} | '(' ID prams ')'{$$ = result($2->s,$3->Vvec);}| '(' ID ')'{$$ = result($2->s,vector<Var>());}
             ;
 prams       : prams EXP{$$ = $1;$$->Vvec.emplace_back(*$2);} | EXP{$$ = new Vec();$$->Vvec.emplace_back(*$1);} 
             ;
-FUN_EXP     :'(' FUN_token'(' prams_def ')' FUN_BODY')'{bind(func_id,$4->vec);infunc = 0;}
+FUN_EXP     :'(' FUN_token'(' prams_def ')' FUN_BODY')'{bind(func_id,$4->vec);infunc = 0; $$ = new Var(func_id);$$->type = 3;func_id++;}
+            |'(' FUN_token'(' ')' FUN_BODY')'{infunc = 0; $$ = new Var(func_id);$$->type = 3;func_id++;}
             ;
 prams_def   : prams_def ID{$1->vec.emplace_back($2->s);$$ = $1;} | ID{$$ = new Vec();$$->vec.emplace_back($1->s);}
             ;
@@ -292,6 +296,9 @@ Def_stmt    : '(' Def ID EXP ')'{
     if($4->type == 0){
         add_sym($3->s,$4->type,$4->ival);
     }
+    else if($4->type == 3){
+        add_func($3->s,$4->ival);
+    }
     else{
         add_sym($3->s,$4->type,$4->bval);    
     }
@@ -306,7 +313,7 @@ void xout(string s){
     //cout<<s<<'\n';
 }
 Funtion fun_arr[100]; 
-map<string,int> id_table;
+map<string,int> id_table,fun_table;
 Var val_table[100];
 priority_queue<int> can_use_seq;
 int max_symbol = 100;
@@ -314,8 +321,15 @@ bool re = 0;
 void bind(int id,vector<string> vec){
     fun_arr[id].pram_init(vec);
 }
-Var* result(vector<Var> vec){
-    return fun_arr[func_id].result(vec);
+Var* result(int id,vector<Var> vec){
+    return fun_arr[id].result(vec);
+}
+Var* result(string s,vector<Var> vec){
+    if(fun_table[s]==0){
+        re = 1;
+        return new Var();
+    }
+    return fun_arr[fun_table[s]].result(vec);
 }
 Var* If_f(Var* p,Var* l,Var* r){
     if(!infunc){
@@ -458,7 +472,13 @@ Var* init(Var* x){
     }
 }
 
-
+void add_func(string s , int val){
+    if(fun_table[s]){
+        re =true;
+        return;
+    }
+    fun_table[s] = val;
+}
 void add_sym(string s , int type , int val){
     if(can_use_seq.size()==0){
         

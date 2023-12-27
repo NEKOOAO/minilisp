@@ -3,7 +3,7 @@
      #include "main.tab.h"
      using namespace std;
      void out(string s){
-          //cout<<s;
+          cout<<s;
      }
 %}
 %option noyywrap
@@ -32,7 +32,7 @@ bool_val #t|#f
 {If} {return If;}
 {MOD} {return MOD;}
 {num} {Var x = new Var(1);yylval.var = new Var(1);yylval.var->ival = atoi(yytext);return num;}
-{ID} {string s = yytext; yylval.var = new Var(s); return ID;}
+{ID} {string s = yytext; out(s); yylval.var = new Var(s); return ID;}
 {bool_val} {
      yylval.var = new Var(false);
      if(yytext[1]=='t'){yylval.var->bval = true;}
