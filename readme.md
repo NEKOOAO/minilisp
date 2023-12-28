@@ -16,7 +16,7 @@ Lex
     - Multiplication
     - Division
     - Modulus
-    - >,<,=
+    - $>,<,=$
 - Logical Operations
     - And
     - Or
