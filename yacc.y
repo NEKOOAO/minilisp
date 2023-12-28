@@ -1,7 +1,7 @@
 %code requires{
 
-#include <bits/stdc++.h>
-using namespace std;
+    #include <bits/stdc++.h>
+    using namespace std;
     struct Var{
         int type;
         string s;
@@ -60,6 +60,14 @@ using namespace std;
         }
         void pram_init(vector<string> s){
             pram = s;
+            set<string> tmp;
+            for(auto i:s){
+                if(tmp.count(i)){
+                    yyerror("redefine");
+                    return;
+                }
+                tmp.insert(i);
+            }
         }
         void pram_set(vector<Var> s){
             if(s.size()!=pram.size()){
@@ -150,6 +158,11 @@ using namespace std;
             Var x = sys_stack.top();
             sys_stack.pop();
             if(x.type == 2){
+                if(!sym.count(x.s)){
+                    _re = true;
+                    yyerror("syntax error undefine");
+                    return x;
+                }
                 x = sym[x.s];
             }
             return x;
