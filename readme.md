@@ -1,4 +1,30 @@
-# 實作
-- 基本題
-- bonus
-    - type checking
+# Mini LISP Interpreter
+- interpreter of a prototype of LISP.
+
+# Implement Way
+C++
+Yacc
+Lex
+# Feature
+- Type Checking
+- Print Statements
+    - Print Number
+    - Print Boolean
+- Numerical Operations
+    - Addition
+    - Subtraction
+    - Multiplication
+    - Division
+    - Modulus
+    - >,<,=
+- Logical Operations
+    - And
+    - Or
+    - Not
+- Define Statements
+    - Define Variable
+    - Define Function
+- Function
+    - Anonymous Function
+    - Named Function
+- If-Else Statement
