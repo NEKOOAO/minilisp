@@ -43,9 +43,9 @@ NUM_OP      :  '+' EXP Plus_EXP  {$$ =new Var( $2->ival+$3->ival);}
             | '*' EXP Mul_EXP {$$ =new Var( $2->ival*$3->ival);} 
             | '/' EXP EXP {$$ =new Var( $2->ival/$3->ival);} 
             | MOD EXP EXP {$$ =new Var( $2->ival%$3->ival);}
-            | '>' EXP EXP {$$ =new Var((bool) $2->ival>$3->ival);}
-            | '<' EXP EXP {$$ =new Var((bool) $2->ival<$3->ival);}
-            | '=' EXP EQU_EXP {$$ = new Var((bool)$2->ival==$3->ival);if(!$3->bval){$$->bval = false;}}
+            | '>' EXP EXP {$$ =new Var( $2->ival>$3->ival);}
+            | '<' EXP EXP {$$ =new Var( $2->ival<$3->ival);}
+            | '=' EXP EQU_EXP {$$ = new Var($2->ival==$3->ival);if(!$3->bval){$$->bval = false;}}
             ;
 EQU_EXP     : EQU_EXP EXP {
     $$ =new Var( $1->ival);
